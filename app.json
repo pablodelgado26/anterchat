@@ -1,0 +1,7 @@
+{
+  "name": "antera-app",
+  "slug": "antera-app",
+  "android": {
+    "package": "com.anonymous.anteraapp"
+  }
+}
