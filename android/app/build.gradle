@@ -109,9 +109,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.anonymous.anteraapp'
+    namespace 'com.antera.chat'
     defaultConfig {
-        applicationId 'com.anonymous.anteraapp'
+        applicationId 'com.antera.chat'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

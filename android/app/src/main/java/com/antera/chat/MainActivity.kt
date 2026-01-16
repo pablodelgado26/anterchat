@@ -1,4 +1,4 @@
-package com.anonymous.anteraapp
+package com.antera.chat
 
 import android.os.Build
 import android.os.Bundle
