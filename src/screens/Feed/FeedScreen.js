@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { COLORS, SIZES, SHADOWS } from "../../constants/theme";
-import { postsAPI } from "../../services/api";
+import api from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -28,8 +29,12 @@ export default function FeedScreen({ navigation }) {
 
   const loadPosts = async () => {
     try {
-      const response = await postsAPI.getAll({ page: 1, limit: 10 });
-      setPosts(response.data.data);
+      const response = await api.get("/posts", {
+        params: { page: 1, limit: 10 },
+      });
+      if (response.data.success) {
+        setPosts(response.data.data);
+      }
     } catch (error) {
       console.error("Erro ao carregar posts:", error);
     } finally {
@@ -46,7 +51,7 @@ export default function FeedScreen({ navigation }) {
 
   const handleLike = async (postId) => {
     try {
-      await postsAPI.toggleLike(postId);
+      await api.post(`/posts/${postId}/like`);
       // Atualizar lista
       loadPosts();
     } catch (error) {
@@ -54,21 +59,38 @@ export default function FeedScreen({ navigation }) {
     }
   };
 
+  const handleProfilePress = (userId) => {
+    navigation.navigate("Profile", { userId });
+  };
+
   const renderPost = ({ item }) => (
-    <TouchableOpacity
-      style={styles.postCard}
-      onPress={() => navigation.navigate("PostDetail", { postId: item.id })}
-    >
+    <View style={styles.postCard}>
       {/* Header do post */}
       <View style={styles.postHeader}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {item.author.name.charAt(0).toUpperCase()}
-          </Text>
-        </View>
+        <TouchableOpacity
+          style={styles.avatarContainer}
+          onPress={() => handleProfilePress(item.author.id)}
+        >
+          <View style={styles.avatar}>
+            {item.author.avatar ? (
+              <Image
+                source={{ uri: item.author.avatar }}
+                style={styles.avatarImage}
+              />
+            ) : (
+              <Text style={styles.avatarText}>
+                {item.author.name.charAt(0).toUpperCase()}
+              </Text>
+            )}
+          </View>
+        </TouchableOpacity>
         <View style={styles.postInfo}>
-          <Text style={styles.authorName}>{item.author.name}</Text>
-          <Text style={styles.authorHeadline}>{item.author.headline}</Text>
+          <TouchableOpacity onPress={() => handleProfilePress(item.author.id)}>
+            <Text style={styles.authorName}>{item.author.name}</Text>
+          </TouchableOpacity>
+          <Text style={styles.authorHeadline}>
+            {item.author.headline || "Profissional"}
+          </Text>
           <Text style={styles.postTime}>
             {formatDistanceToNow(new Date(item.createdAt), {
               addSuffix: true,
@@ -76,10 +98,33 @@ export default function FeedScreen({ navigation }) {
             })}
           </Text>
         </View>
+        <TouchableOpacity style={styles.moreButton}>
+          <Icon name="dots-horizontal" size={24} color={COLORS.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       {/* Conteúdo */}
-      <Text style={styles.postContent}>{item.content}</Text>
+      {item.content && <Text style={styles.postContent}>{item.content}</Text>}
+
+      {/* Imagem */}
+      {item.imageUrl && (
+        <TouchableOpacity
+          onPress={() => navigation.navigate("PostDetail", { postId: item.id })}
+        >
+          <Image source={{ uri: item.imageUrl }} style={styles.postImage} />
+        </TouchableOpacity>
+      )}
+
+      {/* Vídeo placeholder */}
+      {item.videoUrl && (
+        <TouchableOpacity
+          style={styles.videoContainer}
+          onPress={() => navigation.navigate("PostDetail", { postId: item.id })}
+        >
+          <Icon name="play-circle" size={64} color={COLORS.primary} />
+          <Text style={styles.videoText}>Vídeo</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Ações */}
       <View style={styles.postActions}>
@@ -92,7 +137,7 @@ export default function FeedScreen({ navigation }) {
             size={20}
             color={COLORS.textSecondary}
           />
-          <Text style={styles.actionText}>{item._count.likes}</Text>
+          <Text style={styles.actionText}>{item._count?.likes || 0}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -100,7 +145,7 @@ export default function FeedScreen({ navigation }) {
           onPress={() => navigation.navigate("PostDetail", { postId: item.id })}
         >
           <Icon name="comment-outline" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.actionText}>{item._count.comments}</Text>
+          <Text style={styles.actionText}>{item._count?.comments || 0}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.actionButton}>
@@ -108,7 +153,7 @@ export default function FeedScreen({ navigation }) {
           <Text style={styles.actionText}>Compartilhar</Text>
         </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   if (loading) {
@@ -146,6 +191,21 @@ export default function FeedScreen({ navigation }) {
             onRefresh={handleRefresh}
             colors={[COLORS.primary]}
           />
+        }
+        ListEmptyComponent={
+          !loading && (
+            <View style={styles.emptyContainer}>
+              <Icon
+                name="post-outline"
+                size={64}
+                color={COLORS.textSecondary}
+              />
+              <Text style={styles.emptyText}>Nenhuma publicação ainda</Text>
+              <Text style={styles.emptySubtext}>
+                Seja o primeiro a compartilhar algo!
+              </Text>
+            </View>
+          )
         }
       />
 
@@ -203,6 +263,10 @@ const styles = StyleSheet.create({
   postHeader: {
     flexDirection: "row",
     marginBottom: 12,
+    alignItems: "center",
+  },
+  avatarContainer: {
+    marginRight: 12,
   },
   avatar: {
     width: 48,
@@ -211,7 +275,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
   },
   avatarText: {
     color: COLORS.textWhite,
@@ -235,11 +303,36 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
     marginTop: 2,
   },
+  moreButton: {
+    padding: 4,
+  },
   postContent: {
     fontSize: SIZES.body,
     color: COLORS.textPrimary,
     lineHeight: 22,
     marginBottom: 12,
+  },
+  postImage: {
+    width: "100%",
+    height: 250,
+    borderRadius: 8,
+    backgroundColor: COLORS.border,
+    marginBottom: 12,
+  },
+  videoContainer: {
+    width: "100%",
+    height: 250,
+    borderRadius: 8,
+    backgroundColor: COLORS.cardBackground || "#F5F5F5",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  videoText: {
+    marginTop: 8,
+    fontSize: SIZES.body3,
+    color: COLORS.textSecondary,
+    fontWeight: "600",
   },
   postActions: {
     flexDirection: "row",
@@ -268,5 +361,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     ...SHADOWS.large,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 80,
+  },
+  emptyText: {
+    fontSize: SIZES.h3,
+    fontWeight: "bold",
+    color: COLORS.textPrimary,
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: SIZES.body3,
+    color: COLORS.textSecondary,
+    marginTop: 8,
   },
 });

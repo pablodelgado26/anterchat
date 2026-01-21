@@ -17,6 +17,7 @@ import PostDetailScreen from "../screens/Feed/PostDetailScreen";
 import CreatePostScreen from "../screens/Feed/CreatePostScreen";
 import CreateJobScreen from "../screens/Jobs/CreateJobScreen";
 import JobDetailScreen from "../screens/Jobs/JobDetailScreen";
+import ApplyJobScreen from "../screens/Jobs/ApplyJobScreen";
 import ConnectionsScreen from "../screens/Profile/ConnectionsScreen";
 import EditProfileScreen from "../screens/Profile/EditProfileScreen";
 import SearchScreen from "../screens/Search/SearchScreen";
@@ -150,6 +151,11 @@ export default function Navigation() {
           name="CreateJob"
           component={CreateJobScreen}
           options={{ title: "Publicar Vaga" }}
+        />
+        <Stack.Screen
+          name="ApplyJob"
+          component={ApplyJobScreen}
+          options={{ title: "Candidatar-se" }}
         />
         <Stack.Screen
           name="Conversation"
