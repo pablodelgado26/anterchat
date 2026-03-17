@@ -1,9 +1,11 @@
 import React from "react";
+import { View, ActivityIndicator } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { COLORS } from "../constants/theme";
+import { useAuth } from "../contexts/AuthContext";
 
 // Screens
 import LoginScreen from "../screens/Auth/LoginScreen";
@@ -99,6 +101,23 @@ function TabNavigator() {
 
 // Navegação principal (Stack)
 export default function Navigation() {
+  const { signed, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: COLORS.background,
+        }}
+      >
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -112,73 +131,86 @@ export default function Navigation() {
           },
         }}
       >
-        {/* Telas de autenticação */}
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Register"
-          component={RegisterScreen}
-          options={{ title: "Criar Conta" }}
-        />
+        {!signed ? (
+          // Telas de autenticação
+          <>
+            <Stack.Screen
+              name="Login"
+              component={LoginScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Register"
+              component={RegisterScreen}
+              options={{ title: "Criar Conta" }}
+            />
+          </>
+        ) : (
+          // Telas autenticadas
+          <>
+            {/* Navegação principal */}
+            <Stack.Screen
+              name="Main"
+              component={TabNavigator}
+              options={{ headerShown: false }}
+            />
 
-        {/* Navegação principal */}
-        <Stack.Screen
-          name="Main"
-          component={TabNavigator}
-          options={{ headerShown: false }}
-        />
-
-        {/* Telas modais/detalhes */}
-        <Stack.Screen
-          name="PostDetail"
-          component={PostDetailScreen}
-          options={{ title: "Publicação" }}
-        />
-        <Stack.Screen
-          name="CreatePost"
-          component={CreatePostScreen}
-          options={{ title: "Nova Publicação" }}
-        />
-        <Stack.Screen
-          name="JobDetail"
-          component={JobDetailScreen}
-          options={{ title: "Vaga" }}
-        />
-        <Stack.Screen
-          name="CreateJob"
-          component={CreateJobScreen}
-          options={{ title: "Publicar Vaga" }}
-        />
-        <Stack.Screen
-          name="ApplyJob"
-          component={ApplyJobScreen}
-          options={{ title: "Candidatar-se" }}
-        />
-        <Stack.Screen
-          name="Conversation"
-          component={ConversationScreen}
-          options={({ route }) => ({
-            title: route.params?.userName || "Conversa",
-          })}
-        />
-        <Stack.Screen
-          name="Connections"
-          component={ConnectionsScreen}
-          options={{ title: "Conexões" }}
-        />
-        <Stack.Screen
-          name="EditProfile"
-          component={EditProfileScreen}
-          options={{ title: "Editar Perfil" }}
-        />
-        <Stack.Screen
-          name="Search"
-          component={SearchScreen}
-          options={{ title: "Pesquisar" }}
-        />
+            {/* Telas modais/detalhes */}
+            <Stack.Screen
+              name="PostDetail"
+              component={PostDetailScreen}
+              options={{ title: "Publicação" }}
+            />
+            <Stack.Screen
+              name="CreatePost"
+              component={CreatePostScreen}
+              options={{ title: "Nova Publicação" }}
+            />
+            <Stack.Screen
+              name="JobDetail"
+              component={JobDetailScreen}
+              options={{ title: "Vaga" }}
+            />
+            <Stack.Screen
+              name="CreateJob"
+              component={CreateJobScreen}
+              options={{ title: "Publicar Vaga" }}
+            />
+            <Stack.Screen
+              name="ApplyJob"
+              component={ApplyJobScreen}
+              options={{ title: "Candidatar-se" }}
+            />
+            <Stack.Screen
+              name="Conversation"
+              component={ConversationScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Connections"
+              component={ConnectionsScreen}
+              options={{ title: "Conexões" }}
+            />
+            <Stack.Screen
+              name="EditProfile"
+              component={EditProfileScreen}
+              options={{ title: "Editar Perfil" }}
+            />
+            <Stack.Screen
+              name="Search"
+              component={SearchScreen}
+              options={{ title: "Pesquisar" }}
+            />
+            <Stack.Screen
+              name="UserProfile"
+              component={ProfileScreen}
+              options={({ route }) => ({
+                title: route.params?.userName || "Perfil",
+                headerShown: true,
+              })}
+            />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -45,9 +45,7 @@ export default function RegisterScreen({ navigation }) {
     const result = await register({ name, email, password });
     setLoading(false);
 
-    if (result.success) {
-      navigation.replace("Main");
-    } else {
+    if (!result.success) {
       Alert.alert("Erro", result.error);
     }
   };

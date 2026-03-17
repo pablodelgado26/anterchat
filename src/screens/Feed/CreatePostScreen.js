@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { COLORS, SIZES } from "../../constants/theme";
 import { useAuth } from "../../contexts/AuthContext";
@@ -39,7 +39,7 @@ export default function CreatePostScreen({ navigation }) {
             text: "OK",
             onPress: () => navigation.goBack(),
           },
-        ]
+        ],
       );
     }
   };
@@ -133,7 +133,7 @@ export default function CreatePostScreen({ navigation }) {
     if (!token) {
       Alert.alert(
         "Erro",
-        "Você precisa estar logado para criar uma publicação"
+        "Você precisa estar logado para criar uma publicação",
       );
       navigation.navigate("Login");
       return;
@@ -162,9 +162,10 @@ export default function CreatePostScreen({ navigation }) {
       }
     } catch (error) {
       console.error("Erro ao criar post:", error);
-      const errorMessage = error.response?.data?.error || 
-                          error.message || 
-                          "Erro ao criar publicação";
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        "Erro ao criar publicação";
       Alert.alert("Erro", errorMessage);
     } finally {
       setLoading(false);

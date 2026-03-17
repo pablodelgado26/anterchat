@@ -30,9 +30,7 @@ export default function LoginScreen({ navigation }) {
     const result = await login(email, password);
     setLoading(false);
 
-    if (result.success) {
-      navigation.replace("Main");
-    } else {
+    if (!result.success) {
       Alert.alert("Erro", result.error);
     }
   };
