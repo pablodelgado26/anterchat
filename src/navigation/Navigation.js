@@ -1,13 +1,12 @@
 import React from "react";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
-import { COLORS } from "../constants/theme";
+import { COLORS, SHADOWS, SIZES } from "../constants/theme";
 import { useAuth } from "../contexts/AuthContext";
 
-// Screens
 import LoginScreen from "../screens/Auth/LoginScreen";
 import RegisterScreen from "../screens/Auth/RegisterScreen";
 import FeedScreen from "../screens/Feed/FeedScreen";
@@ -28,91 +27,51 @@ import NotificationsScreen from "../screens/Notifications/NotificationsScreen";
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Navegação por abas (Bottom Tabs)
 function TabNavigator() {
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.textSecondary,
-        tabBarStyle: {
-          backgroundColor: COLORS.background,
-          borderTopColor: COLORS.border,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
+        tabBarInactiveTintColor: COLORS.textMuted,
+        tabBarStyle: styles.tabBar,
+        tabBarLabelStyle: styles.tabLabel,
         headerShown: false,
-      }}
+        tabBarIcon: ({ color, size }) => {
+          const names = {
+            Feed: "home-variant-outline",
+            Jobs: "briefcase-outline",
+            Chat: "message-text-outline",
+            Notifications: "bell-outline",
+            Profile: "account-outline",
+          };
+
+          return <Icon name={names[route.name]} size={size} color={color} />;
+        },
+      })}
     >
-      <Tab.Screen
-        name="Feed"
-        component={FeedScreen}
-        options={{
-          tabBarLabel: "Início",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="home" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Jobs"
-        component={JobsScreen}
-        options={{
-          tabBarLabel: "Vagas",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="briefcase" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Chat"
-        component={ChatScreen}
-        options={{
-          tabBarLabel: "Mensagens",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="message-text" size={size} color={color} />
-          ),
-        }}
-      />
+      <Tab.Screen name="Feed" component={FeedScreen} options={{ tabBarLabel: "Feed" }} />
+      <Tab.Screen name="Jobs" component={JobsScreen} options={{ tabBarLabel: "Vagas" }} />
+      <Tab.Screen name="Chat" component={ChatScreen} options={{ tabBarLabel: "Chat" }} />
       <Tab.Screen
         name="Notifications"
         component={NotificationsScreen}
-        options={{
-          tabBarLabel: "Notificações",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="bell" size={size} color={color} />
-          ),
-        }}
+        options={{ tabBarLabel: "Alertas" }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{
-          tabBarLabel: "Perfil",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="account" size={size} color={color} />
-          ),
-        }}
+        options={{ tabBarLabel: "Perfil" }}
       />
     </Tab.Navigator>
   );
 }
 
-// Navegação principal (Stack)
 export default function Navigation() {
   const { signed, loading } = useAuth();
 
   if (loading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: COLORS.background,
-        }}
-      >
+      <View style={styles.loading}>
         <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
@@ -122,17 +81,13 @@ export default function Navigation() {
     <NavigationContainer>
       <Stack.Navigator
         screenOptions={{
-          headerStyle: {
-            backgroundColor: COLORS.primary,
-          },
-          headerTintColor: COLORS.textWhite,
-          headerTitleStyle: {
-            fontWeight: "bold",
-          },
+          headerStyle: styles.header,
+          headerTintColor: COLORS.textPrimary,
+          headerTitleStyle: styles.headerTitle,
+          cardStyle: { backgroundColor: COLORS.background },
         }}
       >
         {!signed ? (
-          // Telas de autenticação
           <>
             <Stack.Screen
               name="Login"
@@ -142,39 +97,35 @@ export default function Navigation() {
             <Stack.Screen
               name="Register"
               component={RegisterScreen}
-              options={{ title: "Criar Conta" }}
+              options={{ title: "Criar conta" }}
             />
           </>
         ) : (
-          // Telas autenticadas
           <>
-            {/* Navegação principal */}
             <Stack.Screen
               name="Main"
               component={TabNavigator}
               options={{ headerShown: false }}
             />
-
-            {/* Telas modais/detalhes */}
-            <Stack.Screen
-              name="PostDetail"
-              component={PostDetailScreen}
-              options={{ title: "Publicação" }}
-            />
             <Stack.Screen
               name="CreatePost"
               component={CreatePostScreen}
-              options={{ title: "Nova Publicação" }}
+              options={{ title: "Novo post" }}
             />
             <Stack.Screen
-              name="JobDetail"
-              component={JobDetailScreen}
-              options={{ title: "Vaga" }}
+              name="PostDetail"
+              component={PostDetailScreen}
+              options={{ title: "Publicacao" }}
             />
             <Stack.Screen
               name="CreateJob"
               component={CreateJobScreen}
-              options={{ title: "Publicar Vaga" }}
+              options={{ title: "Nova vaga" }}
+            />
+            <Stack.Screen
+              name="JobDetail"
+              component={JobDetailScreen}
+              options={{ title: "Detalhes da vaga" }}
             />
             <Stack.Screen
               name="ApplyJob"
@@ -187,27 +138,24 @@ export default function Navigation() {
               options={{ headerShown: false }}
             />
             <Stack.Screen
-              name="Connections"
-              component={ConnectionsScreen}
-              options={{ title: "Conexões" }}
-            />
-            <Stack.Screen
               name="EditProfile"
               component={EditProfileScreen}
-              options={{ title: "Editar Perfil" }}
+              options={{ title: "Editar perfil" }}
+            />
+            <Stack.Screen
+              name="Connections"
+              component={ConnectionsScreen}
+              options={{ title: "Rede profissional" }}
             />
             <Stack.Screen
               name="Search"
               component={SearchScreen}
-              options={{ title: "Pesquisar" }}
+              options={{ title: "Buscar pessoas" }}
             />
             <Stack.Screen
               name="UserProfile"
               component={ProfileScreen}
-              options={({ route }) => ({
-                title: route.params?.userName || "Perfil",
-                headerShown: true,
-              })}
+              options={{ title: "Perfil" }}
             />
           </>
         )}
@@ -215,3 +163,38 @@ export default function Navigation() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: COLORS.background,
+  },
+  header: {
+    backgroundColor: COLORS.backgroundAlt,
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  tabBar: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 18,
+    height: 76,
+    borderRadius: 28,
+    backgroundColor: COLORS.surface,
+    borderTopWidth: 0,
+    paddingTop: 10,
+    paddingBottom: 10,
+    ...SHADOWS.soft,
+  },
+  tabLabel: {
+    fontSize: SIZES.caption,
+    fontWeight: "700",
+  },
+});

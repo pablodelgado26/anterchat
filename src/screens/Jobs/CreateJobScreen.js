@@ -1,324 +1,129 @@
 import React, { useState } from "react";
+import { Alert, ScrollView, StyleSheet, Text } from "react-native";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
-import { COLORS, SIZES } from "../../constants/theme";
-import { useAuth } from "../../contexts/AuthContext";
-import api from "../../services/api";
+  ClayButton,
+  ClayCard,
+  ClayInput,
+  ClayScreen,
+  SegmentedTabs,
+} from "../../components/ui";
+import { COLORS } from "../../constants/theme";
+import { jobsAPI } from "../../services/api";
+import { parseListInput } from "../../utils/formatters";
+
+const applicationTabs = [
+  { label: "Interna", value: "internal" },
+  { label: "Externa", value: "external" },
+];
 
 export default function CreateJobScreen({ navigation }) {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-
-  const [formData, setFormData] = useState({
+  const [applicationType, setApplicationType] = useState("internal");
+  const [form, setForm] = useState({
     title: "",
+    companyName: "",
     description: "",
-    location: "",
-    jobType: "Full-time",
-    workplaceType: "On-site",
-    salaryRange: "",
     requirements: "",
     benefits: "",
+    location: "",
+    jobType: "CLT",
+    workplaceType: "Remoto",
+    salaryRange: "",
     externalApplicationUrl: "",
   });
+  const [loading, setLoading] = useState(false);
 
-  const jobTypes = ["Período integral", "Meio período", "Contrato", "Estágio"];
-  const workplaceTypes = ["Remoto", "Híbrido", "Presencial"];
+  const updateField = (field, value) =>
+    setForm((current) => ({ ...current, [field]: value }));
 
-  const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async () => {
-    // Validações
-    if (!formData.title.trim()) {
-      Alert.alert("Erro", "Por favor, insira o título da vaga");
+  const submit = async () => {
+    if (!form.title || !form.companyName || !form.description) {
+      Alert.alert("Campos obrigatorios", "Titulo, empresa e descricao sao obrigatorios.");
       return;
     }
-    if (!formData.description.trim()) {
-      Alert.alert("Erro", "Por favor, insira a descrição da vaga");
-      return;
-    }
-    if (!formData.location.trim()) {
-      Alert.alert("Erro", "Por favor, insira a localização");
+
+    if (applicationType === "external" && !form.externalApplicationUrl) {
+      Alert.alert("Link obrigatorio", "Informe o link da candidatura externa.");
       return;
     }
 
     setLoading(true);
-
     try {
-      const response = await api.post("/jobs", formData);
-
-      if (response.data.success) {
-        Alert.alert("Sucesso", "Vaga publicada com sucesso!", [
-          {
-            text: "OK",
-            onPress: () => navigation.goBack(),
-          },
-        ]);
-      }
+      await jobsAPI.create({
+        ...form,
+        applicationType,
+        requirements: parseListInput(form.requirements),
+        benefits: parseListInput(form.benefits),
+      });
+      navigation.goBack();
     } catch (error) {
-      Alert.alert(
-        "Erro",
-        error.response?.data?.error || "Erro ao publicar vaga",
-      );
+      Alert.alert("Nao foi possivel publicar", error.response?.data?.error || "Tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Publicar Nova Vaga</Text>
+    <ClayScreen>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title}>Publique uma vaga com fluxo de candidatura claro</Text>
+        <Text style={styles.subtitle}>
+          Use candidatura interna para receber curriculos no app ou externa para direcionar ao site da empresa.
+        </Text>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Título da Vaga *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.title}
-            onChangeText={(value) => handleInputChange("title", value)}
-            placeholder="Ex: Desenvolvedor Full Stack"
-            placeholderTextColor={COLORS.textSecondary}
-          />
-        </View>
+        <SegmentedTabs options={applicationTabs} value={applicationType} onChange={setApplicationType} />
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Descrição *</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={formData.description}
-            onChangeText={(value) => handleInputChange("description", value)}
-            placeholder="Descreva as responsabilidades e detalhes da vaga..."
-            placeholderTextColor={COLORS.textSecondary}
+        <ClayCard style={{ marginTop: 18 }}>
+          <ClayInput label="Titulo da vaga" value={form.title} onChangeText={(value) => updateField("title", value)} />
+          <ClayInput label="Empresa" value={form.companyName} onChangeText={(value) => updateField("companyName", value)} />
+          <ClayInput label="Descricao completa" multiline value={form.description} onChangeText={(value) => updateField("description", value)} />
+          <ClayInput
+            label="Requisitos"
             multiline
-            numberOfLines={6}
-            textAlignVertical="top"
+            value={form.requirements}
+            onChangeText={(value) => updateField("requirements", value)}
+            hint="Um requisito por linha."
           />
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Localização *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.location}
-            onChangeText={(value) => handleInputChange("location", value)}
-            placeholder="Ex: São Paulo, SP"
-            placeholderTextColor={COLORS.textSecondary}
-          />
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Tipo de Emprego *</Text>
-          <View style={styles.buttonGroup}>
-            {jobTypes.map((type) => (
-              <TouchableOpacity
-                key={type}
-                style={[
-                  styles.optionButton,
-                  formData.jobType === type && styles.optionButtonActive,
-                ]}
-                onPress={() => handleInputChange("jobType", type)}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    formData.jobType === type && styles.optionTextActive,
-                  ]}
-                >
-                  {type}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Modalidade de Trabalho *</Text>
-          <View style={styles.buttonGroup}>
-            {workplaceTypes.map((type) => (
-              <TouchableOpacity
-                key={type}
-                style={[
-                  styles.optionButton,
-                  formData.workplaceType === type && styles.optionButtonActive,
-                ]}
-                onPress={() => handleInputChange("workplaceType", type)}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    formData.workplaceType === type && styles.optionTextActive,
-                  ]}
-                >
-                  {type}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Faixa Salarial</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.salaryRange}
-            onChangeText={(value) => handleInputChange("salaryRange", value)}
-            placeholder="Ex: R$ 5.000 - R$ 8.000"
-            placeholderTextColor={COLORS.textSecondary}
-          />
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Requisitos</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={formData.requirements}
-            onChangeText={(value) => handleInputChange("requirements", value)}
-            placeholder="Liste os requisitos separados por vírgula ou quebra de linha"
-            placeholderTextColor={COLORS.textSecondary}
+          <ClayInput
+            label="Beneficios"
             multiline
-            numberOfLines={4}
-            textAlignVertical="top"
+            value={form.benefits}
+            onChangeText={(value) => updateField("benefits", value)}
+            hint="Um beneficio por linha."
           />
-        </View>
+          <ClayInput label="Localizacao" value={form.location} onChangeText={(value) => updateField("location", value)} />
+          <ClayInput label="Tipo de contrato" value={form.jobType} onChangeText={(value) => updateField("jobType", value)} />
+          <ClayInput label="Modelo de trabalho" value={form.workplaceType} onChangeText={(value) => updateField("workplaceType", value)} />
+          <ClayInput label="Faixa salarial" value={form.salaryRange} onChangeText={(value) => updateField("salaryRange", value)} />
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Benefícios</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={formData.benefits}
-            onChangeText={(value) => handleInputChange("benefits", value)}
-            placeholder="Liste os benefícios separados por vírgula ou quebra de linha"
-            placeholderTextColor={COLORS.textSecondary}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-          />
-        </View>
+          {applicationType === "external" ? (
+            <ClayInput
+              label="Link da candidatura"
+              value={form.externalApplicationUrl}
+              onChangeText={(value) => updateField("externalApplicationUrl", value)}
+            />
+          ) : null}
+        </ClayCard>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Link Externo para Candidatura</Text>
-          <Text style={styles.helpText}>
-            (Opcional) Se preenchido, os candidatos serão redirecionados para
-            este link
-          </Text>
-          <TextInput
-            style={styles.input}
-            value={formData.externalApplicationUrl}
-            onChangeText={(value) =>
-              handleInputChange("externalApplicationUrl", value)
-            }
-            placeholder="https://exemplo.com/candidatura"
-            placeholderTextColor={COLORS.textSecondary}
-            keyboardType="url"
-            autoCapitalize="none"
-          />
-        </View>
-
-        <TouchableOpacity
-          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.submitButtonText}>Publicar Vaga</Text>
-          )}
-        </TouchableOpacity>
-
-        <View style={{ height: 40 }} />
-      </View>
-    </ScrollView>
+        <ClayButton title="Publicar vaga" icon="rocket-launch-outline" onPress={submit} loading={loading} style={{ marginTop: 18, marginBottom: 30 }} />
+      </ScrollView>
+    </ClayScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
   content: {
-    padding: SIZES.padding,
+    padding: 18,
+    paddingBottom: 80,
   },
   title: {
-    fontSize: SIZES.h2,
-    fontWeight: "bold",
     color: COLORS.textPrimary,
-    marginBottom: 24,
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: "900",
   },
-  formGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: SIZES.body3,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-  },
-  helpText: {
-    fontSize: SIZES.body4,
+  subtitle: {
     color: COLORS.textSecondary,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: COLORS.cardBackground || "#FFF",
-    borderWidth: 1,
-    borderColor: COLORS.border || "#E0E0E0",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: SIZES.body3,
-    color: COLORS.textPrimary,
-  },
-  textArea: {
-    minHeight: 100,
-  },
-  buttonGroup: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  optionButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border || "#E0E0E0",
-    backgroundColor: COLORS.cardBackground || "#FFF",
-  },
-  optionButtonActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  optionText: {
-    fontSize: SIZES.body3,
-    color: COLORS.textPrimary,
-  },
-  optionTextActive: {
-    color: "#FFF",
-    fontWeight: "600",
-  },
-  submitButton: {
-    backgroundColor: COLORS.primary,
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
+    lineHeight: 22,
     marginTop: 10,
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    color: "#FFF",
-    fontSize: SIZES.body2,
-    fontWeight: "bold",
   },
 });

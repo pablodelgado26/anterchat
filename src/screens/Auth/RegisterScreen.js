@@ -1,196 +1,92 @@
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
+  ScrollView,
   StyleSheet,
+  Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
-  Alert,
+  Text,
 } from "react-native";
-import { COLORS, SIZES, SHADOWS } from "../../constants/theme";
+import { ClayButton, ClayCard, ClayInput, ClayScreen } from "../../components/ui";
+import { COLORS } from "../../constants/theme";
 import { useAuth } from "../../contexts/AuthContext";
 
-export default function RegisterScreen({ navigation }) {
+export default function RegisterScreen() {
   const { register } = useAuth();
-  const [formData, setFormData] = useState({
+  const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
-    confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
 
-  const handleRegister = async () => {
-    const { name, email, password, confirmPassword } = formData;
+  const onChange = (field, value) => setForm((current) => ({ ...current, [field]: value }));
 
-    if (!name || !email || !password || !confirmPassword) {
-      Alert.alert("Erro", "Preencha todos os campos");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert("Erro", "As senhas não coincidem");
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert("Erro", "A senha deve ter no mínimo 6 caracteres");
+  const handleSubmit = async () => {
+    if (!form.name || !form.email || !form.password) {
+      Alert.alert("Campos obrigatorios", "Preencha nome, email e senha.");
       return;
     }
 
     setLoading(true);
-    const result = await register({ name, email, password });
+    const result = await register(form);
     setLoading(false);
 
     if (!result.success) {
-      Alert.alert("Erro", result.error);
+      Alert.alert("Nao foi possivel criar a conta", result.error);
     }
   };
 
-  const updateFormData = (field, value) => {
-    setFormData({ ...formData, [field]: value });
-  };
-
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+    <ClayScreen>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Criar Conta</Text>
-          <Text style={styles.subtitle}>Junte-se à rede profissional</Text>
-        </View>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <Text style={styles.title}>Monte seu perfil profissional no Antera Chat</Text>
+          <Text style={styles.subtitle}>
+            Em poucos passos voce ja consegue publicar, vender, buscar vagas e criar conexoes.
+          </Text>
 
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Nome completo"
-            value={formData.name}
-            onChangeText={(value) => updateFormData("name", value)}
-            placeholderTextColor={COLORS.textSecondary}
-          />
-
-          <TextInput
-            style={styles.input}
-            placeholder="E-mail"
-            value={formData.email}
-            onChangeText={(value) => updateFormData("email", value)}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholderTextColor={COLORS.textSecondary}
-          />
-
-          <TextInput
-            style={styles.input}
-            placeholder="Senha"
-            value={formData.password}
-            onChangeText={(value) => updateFormData("password", value)}
-            secureTextEntry
-            placeholderTextColor={COLORS.textSecondary}
-          />
-
-          <TextInput
-            style={styles.input}
-            placeholder="Confirmar senha"
-            value={formData.confirmPassword}
-            onChangeText={(value) => updateFormData("confirmPassword", value)}
-            secureTextEntry
-            placeholderTextColor={COLORS.textSecondary}
-          />
-
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleRegister}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>
-              {loading ? "Criando..." : "Criar Conta"}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.linkButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.linkText}>
-              Já tem uma conta? <Text style={styles.linkTextBold}>Entrar</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <ClayCard>
+            <ClayInput label="Nome completo" value={form.name} onChangeText={(value) => onChange("name", value)} />
+            <ClayInput
+              label="Email"
+              value={form.email}
+              autoCapitalize="none"
+              onChangeText={(value) => onChange("email", value)}
+            />
+            <ClayInput
+              label="Senha"
+              value={form.password}
+              secureTextEntry
+              onChangeText={(value) => onChange("password", value)}
+              hint="Sua conta ja sera criada com estrutura pronta para networking e vendas."
+            />
+            <ClayButton title="Criar minha conta" onPress={handleSubmit} loading={loading} />
+          </ClayCard>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ClayScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: SIZES.paddingLarge,
-  },
-  header: {
-    marginTop: 40,
-    marginBottom: 32,
+  content: {
+    padding: 20,
+    paddingTop: 40,
   },
   title: {
-    fontSize: SIZES.h1,
-    fontWeight: "bold",
+    fontSize: 30,
+    lineHeight: 38,
+    fontWeight: "900",
     color: COLORS.textPrimary,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   subtitle: {
-    fontSize: SIZES.body,
     color: COLORS.textSecondary,
-  },
-  form: {
-    width: "100%",
-  },
-  input: {
-    backgroundColor: COLORS.backgroundGray,
-    borderRadius: SIZES.radius,
-    padding: SIZES.padding,
-    fontSize: SIZES.body,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    color: COLORS.textPrimary,
-  },
-  button: {
-    backgroundColor: COLORS.primary,
-    borderRadius: SIZES.radius,
-    padding: SIZES.padding,
-    alignItems: "center",
-    marginTop: 8,
-    ...SHADOWS.small,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: COLORS.textWhite,
-    fontSize: SIZES.body,
-    fontWeight: "bold",
-  },
-  linkButton: {
-    marginTop: 24,
-    alignItems: "center",
-  },
-  linkText: {
-    color: COLORS.textSecondary,
-    fontSize: SIZES.small,
-  },
-  linkTextBold: {
-    color: COLORS.primary,
-    fontWeight: "bold",
+    lineHeight: 22,
+    marginBottom: 22,
   },
 });

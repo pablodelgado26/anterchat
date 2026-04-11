@@ -1,112 +1,71 @@
-// Cores do tema Antera Chat (Verde e Branco - similar ao LinkedIn)
 export const COLORS = {
-  // Cores principais
-  primary: "#10B981", // Verde principal (Emerald-500)
-  primaryDark: "#059669", // Verde escuro (Emerald-600)
-  primaryLight: "#34D399", // Verde claro (Emerald-400)
-
-  // Cores de fundo
-  background: "#FFFFFF",
-  backgroundGray: "#F3F4F6",
-  backgroundDark: "#1F2937",
-
-  // Cores de texto
-  textPrimary: "#111827",
-  textSecondary: "#6B7280",
-  textLight: "#9CA3AF",
+  primary: "#1FAF74",
+  primaryDark: "#13885A",
+  primarySoft: "#DDF5EA",
+  primaryGlow: "#B8E7D0",
+  background: "#F4FBF7",
+  backgroundAlt: "#EAF6EF",
+  surface: "#F2FAF5",
+  surfaceStrong: "#FFFFFF",
+  textPrimary: "#163127",
+  textSecondary: "#5A7A6C",
+  textMuted: "#8AA395",
   textWhite: "#FFFFFF",
-
-  // Cores de borda e divisores
-  border: "#E5E7EB",
-  divider: "#D1D5DB",
-
-  // Cores de estado
-  success: "#10B981",
-  error: "#EF4444",
-  warning: "#F59E0B",
-  info: "#3B82F6",
-
-  // Cores de interação
-  like: "#EF4444",
-  comment: "#6B7280",
-  share: "#10B981",
-
-  // Overlay e sombras
-  overlay: "rgba(0, 0, 0, 0.5)",
-  shadow: "rgba(0, 0, 0, 0.1)",
+  border: "#D6E9DD",
+  shadowDark: "rgba(19, 74, 47, 0.18)",
+  shadowLight: "rgba(255,255,255,0.95)",
+  success: "#2FB273",
+  warning: "#E3A43A",
+  danger: "#E35D6A",
+  info: "#5D9CE6",
+  overlay: "rgba(10, 37, 23, 0.18)",
 };
 
 export const SIZES = {
-  // Tamanhos de fonte
+  xs: 6,
+  sm: 10,
+  md: 16,
+  lg: 22,
+  xl: 28,
+  xxl: 36,
+  radiusSm: 14,
+  radiusMd: 20,
+  radiusLg: 28,
+  radiusXl: 36,
+  iconSm: 16,
+  iconMd: 22,
+  iconLg: 28,
+  avatarSm: 40,
+  avatarMd: 56,
+  avatarLg: 84,
   h1: 32,
-  h2: 24,
-  h3: 20,
-  h4: 18,
+  h2: 26,
+  h3: 21,
   body: 16,
-  body2: 15,
-  body3: 14,
-  small: 14,
-  tiny: 12,
-
-  // Espaçamento
-  padding: 16,
-  paddingSmall: 8,
-  paddingLarge: 24,
-
-  // Border radius
-  radius: 8,
-  radiusSmall: 4,
-  radiusLarge: 16,
-  radiusFull: 9999,
-
-  // Tamanhos de ícones
-  iconSmall: 16,
-  icon: 24,
-  iconLarge: 32,
-
-  // Tamanhos de avatar
-  avatarSmall: 32,
-  avatar: 48,
-  avatarLarge: 80,
-  avatarXLarge: 120,
-};
-
-export const FONTS = {
-  regular: "System",
-  medium: "System",
-  bold: "System",
-  light: "System",
+  bodySm: 14,
+  caption: 12,
 };
 
 export const SHADOWS = {
-  small: {
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+  clay: {
+    shadowColor: COLORS.shadowDark,
+    shadowOffset: { width: 10, height: 10 },
+    shadowOpacity: 1,
+    shadowRadius: 18,
+    elevation: 10,
   },
-  medium: {
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
+  clayInset: {
+    shadowColor: COLORS.shadowLight,
+    shadowOffset: { width: -8, height: -8 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    elevation: 0,
   },
-  large: {
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
+  soft: {
+    shadowColor: COLORS.shadowDark,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 6,
   },
 };

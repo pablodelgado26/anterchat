@@ -2,27 +2,26 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
-  Image,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
+  TouchableOpacity,
 } from "react-native";
-import { COLORS, SIZES, SHADOWS } from "../../constants/theme";
+import { ClayButton, ClayCard, ClayInput, ClayScreen } from "../../components/ui";
+import { COLORS, SIZES } from "../../constants/theme";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("ana@antera.com");
+  const [password, setPassword] = useState("123456");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Erro", "Preencha todos os campos");
+      Alert.alert("Campos obrigatorios", "Preencha email e senha.");
       return;
     }
 
@@ -31,152 +30,126 @@ export default function LoginScreen({ navigation }) {
     setLoading(false);
 
     if (!result.success) {
-      Alert.alert("Erro", result.error);
+      Alert.alert("Nao foi possivel entrar", result.error);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+    <ClayScreen>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>A</Text>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.hero}>
+            <Text style={styles.badge}>Antera Chat</Text>
+            <Text style={styles.title}>Networking profissional com cara de produto moderno.</Text>
+            <Text style={styles.subtitle}>
+              Compartilhe marketing pessoal, venda produtos, encontre vagas e converse em tempo real.
+            </Text>
           </View>
-          <Text style={styles.title}>Antera Chat</Text>
-          <Text style={styles.subtitle}>Conecte-se com profissionais</Text>
-        </View>
 
-        {/* Formulário */}
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="E-mail"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholderTextColor={COLORS.textSecondary}
-          />
+          <ClayCard style={styles.card}>
+            <ClayInput label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" />
+            <ClayInput
+              label="Senha"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+            <ClayButton title="Entrar" onPress={handleLogin} loading={loading} />
+            <ClayButton
+              title="Criar conta"
+              variant="secondary"
+              style={{ marginTop: 12 }}
+              onPress={() => navigation.navigate("Register")}
+            />
+            <Text style={styles.helper}>Login demo: `ana@antera.com` / `123456`</Text>
+          </ClayCard>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Senha"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            placeholderTextColor={COLORS.textSecondary}
-          />
+          <View style={styles.footerPoints}>
+            {[
+              "Feed para marketing pessoal e vendas",
+              "Area separada para vagas e candidaturas",
+              "Perfil estilo creator com foco em networking",
+            ].map((item) => (
+              <View key={item} style={styles.point}>
+                <View style={styles.dot} />
+                <Text style={styles.pointText}>{item}</Text>
+              </View>
+            ))}
+          </View>
 
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>
-              {loading ? "Entrando..." : "Entrar"}
-            </Text>
+          <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+            <Text style={styles.link}>Ainda nao tem conta? Criar agora</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.linkButton}
-            onPress={() => navigation.navigate("Register")}
-          >
-            <Text style={styles.linkText}>
-              Não tem uma conta?{" "}
-              <Text style={styles.linkTextBold}>Cadastre-se</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ClayScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
+  content: {
+    padding: 20,
+    paddingTop: 56,
+    paddingBottom: 40,
   },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    padding: SIZES.paddingLarge,
+  hero: {
+    marginBottom: 24,
   },
-  logoContainer: {
-    alignItems: "center",
-    marginBottom: 48,
-  },
-  logoCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: COLORS.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-    ...SHADOWS.medium,
-  },
-  logoText: {
-    fontSize: 48,
-    fontWeight: "bold",
-    color: COLORS.textWhite,
+  badge: {
+    alignSelf: "flex-start",
+    backgroundColor: COLORS.primarySoft,
+    color: COLORS.primaryDark,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    fontWeight: "800",
+    marginBottom: 18,
   },
   title: {
     fontSize: SIZES.h1,
-    fontWeight: "bold",
-    color: COLORS.primary,
-    marginBottom: 8,
+    color: COLORS.textPrimary,
+    fontWeight: "900",
+    lineHeight: 38,
   },
   subtitle: {
-    fontSize: SIZES.body,
+    marginTop: 12,
     color: COLORS.textSecondary,
-  },
-  form: {
-    width: "100%",
-  },
-  input: {
-    backgroundColor: COLORS.backgroundGray,
-    borderRadius: SIZES.radius,
-    padding: SIZES.padding,
     fontSize: SIZES.body,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    color: COLORS.textPrimary,
+    lineHeight: 24,
   },
-  button: {
+  card: {
+    marginBottom: 18,
+  },
+  helper: {
+    color: COLORS.textMuted,
+    textAlign: "center",
+    marginTop: 14,
+  },
+  footerPoints: {
+    gap: 10,
+    marginBottom: 20,
+  },
+  point: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: COLORS.primary,
-    borderRadius: SIZES.radius,
-    padding: SIZES.padding,
-    alignItems: "center",
-    marginTop: 8,
-    ...SHADOWS.small,
+    marginRight: 10,
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: COLORS.textWhite,
-    fontSize: SIZES.body,
-    fontWeight: "bold",
-  },
-  linkButton: {
-    marginTop: 24,
-    alignItems: "center",
-  },
-  linkText: {
+  pointText: {
     color: COLORS.textSecondary,
-    fontSize: SIZES.small,
+    flex: 1,
   },
-  linkTextBold: {
-    color: COLORS.primary,
-    fontWeight: "bold",
+  link: {
+    textAlign: "center",
+    color: COLORS.primaryDark,
+    fontWeight: "800",
   },
 });

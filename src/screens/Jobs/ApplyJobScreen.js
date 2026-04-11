@@ -1,433 +1,114 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
-import { COLORS, SIZES } from "../../constants/theme";
-import api from "../../services/api";
+import { Alert, ScrollView, StyleSheet, Text } from "react-native";
+import * as DocumentPicker from "expo-document-picker";
+import { ClayButton, ClayCard, ClayInput, ClayScreen } from "../../components/ui";
+import { COLORS } from "../../constants/theme";
+import { jobsAPI } from "../../services/api";
+import { formatFileLabel } from "../../utils/formatters";
 
-export default function ApplyJobScreen({ route, navigation }) {
-  const { jobId } = route.params;
-  const [loading, setLoading] = useState(false);
-
-  const [formData, setFormData] = useState({
+export default function ApplyJobScreen({ navigation, route }) {
+  const { jobId, jobTitle } = route.params;
+  const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
-    resumeUrl: "",
-    education: [
-      {
-        institution: "",
-        degree: "",
-        fieldOfStudy: "",
-        startYear: "",
-        endYear: "",
-      },
-    ],
+    education: "",
+    coverLetter: "",
   });
+  const [resume, setResume] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+  const updateField = (field, value) =>
+    setForm((current) => ({ ...current, [field]: value }));
 
-  const handleEducationChange = (index, field, value) => {
-    const newEducation = [...formData.education];
-    newEducation[index][field] = value;
-    setFormData((prev) => ({ ...prev, education: newEducation }));
-  };
-
-  const addEducation = () => {
-    setFormData((prev) => ({
-      ...prev,
-      education: [
-        ...prev.education,
-        {
-          institution: "",
-          degree: "",
-          fieldOfStudy: "",
-          startYear: "",
-          endYear: "",
-        },
+  const pickResume = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ],
-    }));
-  };
+      copyToCacheDirectory: true,
+      multiple: false,
+    });
 
-  const removeEducation = (index) => {
-    if (formData.education.length > 1) {
-      const newEducation = formData.education.filter((_, i) => i !== index);
-      setFormData((prev) => ({ ...prev, education: newEducation }));
+    if (!result.canceled) {
+      setResume(result.assets[0]);
     }
   };
 
-  const validateEmail = (email) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-  };
-
-  const handleSubmit = async () => {
-    // Validações
-    if (!formData.name.trim()) {
-      Alert.alert("Erro", "Por favor, insira seu nome");
-      return;
-    }
-    if (!formData.email.trim()) {
-      Alert.alert("Erro", "Por favor, insira seu email");
-      return;
-    }
-    if (!validateEmail(formData.email)) {
-      Alert.alert("Erro", "Por favor, insira um email válido");
-      return;
-    }
-    if (!formData.phone.trim()) {
-      Alert.alert("Erro", "Por favor, insira seu telefone");
-      return;
-    }
-
-    // Validar pelo menos uma formação
-    const hasValidEducation = formData.education.some(
-      (edu) => edu.institution.trim() && edu.degree.trim(),
-    );
-
-    if (!hasValidEducation) {
-      Alert.alert(
-        "Erro",
-        "Por favor, preencha pelo menos uma formação acadêmica",
-      );
+  const submit = async () => {
+    if (!form.name || !form.email || !form.phone || !resume) {
+      Alert.alert("Formulario incompleto", "Preencha os campos e anexe seu curriculo.");
       return;
     }
 
     setLoading(true);
-
     try {
-      // Filtrar formações válidas
-      const validEducation = formData.education.filter(
-        (edu) => edu.institution.trim() && edu.degree.trim(),
-      );
-
-      const response = await api.post(`/jobs/${jobId}/apply`, {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        resumeUrl: formData.resumeUrl || null,
-        education: validEducation,
+      await jobsAPI.apply(jobId, {
+        ...form,
+        resumeUrl: resume.uri,
+        resumeFileName: formatFileLabel(resume),
+        resumeMimeType: resume.mimeType,
       });
-
-      if (response.data.success) {
-        Alert.alert("Sucesso", "Candidatura enviada com sucesso! Boa sorte!", [
-          {
-            text: "OK",
-            onPress: () => navigation.goBack(),
-          },
-        ]);
-      }
+      Alert.alert("Candidatura enviada", "Seu perfil foi enviado para a vaga.");
+      navigation.goBack();
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.error || "Erro ao enviar candidatura";
-      Alert.alert("Erro", errorMessage);
+      Alert.alert("Nao foi possivel candidatar", error.response?.data?.error || "Tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Candidatar-se à Vaga</Text>
-        <Text style={styles.subtitle}>
-          Preencha os dados abaixo para enviar sua candidatura
-        </Text>
+    <ClayScreen>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title}>Candidatura interna</Text>
+        <Text style={styles.subtitle}>Vaga: {jobTitle}</Text>
 
-        {/* Dados Pessoais */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Dados Pessoais</Text>
+        <ClayCard>
+          <ClayInput label="Nome completo" value={form.name} onChangeText={(value) => updateField("name", value)} />
+          <ClayInput label="Email" value={form.email} onChangeText={(value) => updateField("email", value)} autoCapitalize="none" />
+          <ClayInput label="Telefone" value={form.phone} onChangeText={(value) => updateField("phone", value)} />
+          <ClayInput
+            label="Formacao"
+            value={form.education}
+            onChangeText={(value) => updateField("education", value)}
+            hint="Curso, certificacao ou ultimo nivel academico."
+          />
+          <ClayInput
+            label="Carta de apresentacao"
+            multiline
+            value={form.coverLetter}
+            onChangeText={(value) => updateField("coverLetter", value)}
+          />
+          <ClayButton
+            title={resume ? `Curriculo: ${formatFileLabel(resume)}` : "Selecionar curriculo PDF ou DOC"}
+            variant="secondary"
+            icon="paperclip"
+            onPress={pickResume}
+          />
+        </ClayCard>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Nome Completo *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.name}
-              onChangeText={(value) => handleInputChange("name", value)}
-              placeholder="Seu nome completo"
-              placeholderTextColor={COLORS.textSecondary}
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Email *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.email}
-              onChangeText={(value) => handleInputChange("email", value)}
-              placeholder="seu.email@exemplo.com"
-              placeholderTextColor={COLORS.textSecondary}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Telefone *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.phone}
-              onChangeText={(value) => handleInputChange("phone", value)}
-              placeholder="(00) 00000-0000"
-              placeholderTextColor={COLORS.textSecondary}
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Link do Currículo</Text>
-            <Text style={styles.helpText}>
-              (Opcional) Link para Google Drive, Dropbox, LinkedIn, etc.
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={formData.resumeUrl}
-              onChangeText={(value) => handleInputChange("resumeUrl", value)}
-              placeholder="https://exemplo.com/meu-curriculo"
-              placeholderTextColor={COLORS.textSecondary}
-              keyboardType="url"
-              autoCapitalize="none"
-            />
-          </View>
-        </View>
-
-        {/* Formação Acadêmica */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Formação Acadêmica</Text>
-            <TouchableOpacity style={styles.addButton} onPress={addEducation}>
-              <Text style={styles.addButtonText}>+ Adicionar</Text>
-            </TouchableOpacity>
-          </View>
-
-          {formData.education.map((edu, index) => (
-            <View key={index} style={styles.educationCard}>
-              <View style={styles.educationHeader}>
-                <Text style={styles.educationNumber}>Formação {index + 1}</Text>
-                {formData.education.length > 1 && (
-                  <TouchableOpacity
-                    onPress={() => removeEducation(index)}
-                    style={styles.removeButton}
-                  >
-                    <Text style={styles.removeButtonText}>Remover</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Instituição *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={edu.institution}
-                  onChangeText={(value) =>
-                    handleEducationChange(index, "institution", value)
-                  }
-                  placeholder="Nome da instituição"
-                  placeholderTextColor={COLORS.textSecondary}
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Grau *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={edu.degree}
-                  onChangeText={(value) =>
-                    handleEducationChange(index, "degree", value)
-                  }
-                  placeholder="Ex: Bacharelado, Mestrado, Técnico"
-                  placeholderTextColor={COLORS.textSecondary}
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Área de Estudo</Text>
-                <TextInput
-                  style={styles.input}
-                  value={edu.fieldOfStudy}
-                  onChangeText={(value) =>
-                    handleEducationChange(index, "fieldOfStudy", value)
-                  }
-                  placeholder="Ex: Ciência da Computação"
-                  placeholderTextColor={COLORS.textSecondary}
-                />
-              </View>
-
-              <View style={styles.row}>
-                <View style={[styles.formGroup, { flex: 1, marginRight: 10 }]}>
-                  <Text style={styles.label}>Ano Início</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={edu.startYear}
-                    onChangeText={(value) =>
-                      handleEducationChange(index, "startYear", value)
-                    }
-                    placeholder="2020"
-                    placeholderTextColor={COLORS.textSecondary}
-                    keyboardType="numeric"
-                    maxLength={4}
-                  />
-                </View>
-
-                <View style={[styles.formGroup, { flex: 1 }]}>
-                  <Text style={styles.label}>Ano Fim</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={edu.endYear}
-                    onChangeText={(value) =>
-                      handleEducationChange(index, "endYear", value)
-                    }
-                    placeholder="2024"
-                    placeholderTextColor={COLORS.textSecondary}
-                    keyboardType="numeric"
-                    maxLength={4}
-                  />
-                </View>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        <TouchableOpacity
-          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.submitButtonText}>Enviar Candidatura</Text>
-          )}
-        </TouchableOpacity>
-
-        <View style={{ height: 40 }} />
-      </View>
-    </ScrollView>
+        <ClayButton title="Enviar candidatura" icon="send-outline" onPress={submit} loading={loading} style={{ marginTop: 18, marginBottom: 30 }} />
+      </ScrollView>
+    </ClayScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
   content: {
-    padding: SIZES.padding,
+    padding: 18,
+    paddingBottom: 80,
   },
   title: {
-    fontSize: SIZES.h2,
-    fontWeight: "bold",
     color: COLORS.textPrimary,
-    marginBottom: 8,
+    fontSize: 28,
+    fontWeight: "900",
   },
   subtitle: {
-    fontSize: SIZES.body3,
     color: COLORS.textSecondary,
-    marginBottom: 24,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: SIZES.h3,
-    fontWeight: "bold",
-    color: COLORS.textPrimary,
-  },
-  formGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: SIZES.body3,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-  },
-  helpText: {
-    fontSize: SIZES.body4,
-    color: COLORS.textSecondary,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: COLORS.cardBackground || "#FFF",
-    borderWidth: 1,
-    borderColor: COLORS.border || "#E0E0E0",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: SIZES.body3,
-    color: COLORS.textPrimary,
-  },
-  addButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  addButtonText: {
-    color: "#FFF",
-    fontSize: SIZES.body3,
-    fontWeight: "600",
-  },
-  educationCard: {
-    backgroundColor: COLORS.cardBackground || "#F5F5F5",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border || "#E0E0E0",
-  },
-  educationHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  educationNumber: {
-    fontSize: SIZES.body2,
-    fontWeight: "bold",
-    color: COLORS.textPrimary,
-  },
-  removeButton: {
-    backgroundColor: COLORS.error || "#F44336",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  removeButtonText: {
-    color: "#FFF",
-    fontSize: SIZES.body4,
-    fontWeight: "600",
-  },
-  row: {
-    flexDirection: "row",
-  },
-  submitButton: {
-    backgroundColor: COLORS.primary,
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    color: "#FFF",
-    fontSize: SIZES.body2,
-    fontWeight: "bold",
+    marginTop: 8,
+    marginBottom: 18,
   },
 });

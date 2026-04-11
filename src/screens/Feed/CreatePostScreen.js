@@ -1,415 +1,220 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Image,
   Alert,
-  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { COLORS, SIZES } from "../../constants/theme";
-import { useAuth } from "../../contexts/AuthContext";
-import api from "../../services/api";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
+import {
+  ClayButton,
+  ClayCard,
+  ClayInput,
+  ClayScreen,
+  SegmentedTabs,
+} from "../../components/ui";
+import { COLORS } from "../../constants/theme";
+import { postsAPI } from "../../services/api";
+
+const postTabs = [
+  { label: "Marketing", value: "marketing" },
+  { label: "Venda", value: "sale" },
+];
 
 export default function CreatePostScreen({ navigation }) {
-  const { user } = useAuth();
-  const [content, setContent] = useState("");
-  const [imageUri, setImageUri] = useState(null);
-  const [videoUri, setVideoUri] = useState(null);
+  const [type, setType] = useState("marketing");
+  const [form, setForm] = useState({
+    title: "",
+    content: "",
+    productName: "",
+    productPrice: "",
+    externalLink: "",
+    imageUrl: "",
+    videoUrl: "",
+  });
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    const token = await AsyncStorage.getItem("token");
-    if (!token) {
-      Alert.alert(
-        "Não autenticado",
-        "Você precisa estar logado para criar uma publicação",
-        [
-          {
-            text: "OK",
-            onPress: () => navigation.goBack(),
-          },
-        ],
-      );
-    }
-  };
+  const updateField = (field, value) =>
+    setForm((current) => ({ ...current, [field]: value }));
 
   const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (status !== "granted") {
-      Alert.alert(
-        "Permissão necessária",
-        "Precisamos de permissão para acessar suas fotos",
-      );
+    if (!permission.granted) {
+      Alert.alert("Permissao necessaria", "Precisamos acessar suas imagens.");
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.9,
       allowsEditing: true,
-      aspect: [16, 9],
-      quality: 0.8,
     });
 
     if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
-      setVideoUri(null); // Remove vídeo se selecionar imagem
+      updateField("imageUrl", result.assets[0].uri);
+      updateField("videoUrl", "");
     }
   };
 
-  const pickVideo = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (status !== "granted") {
-      Alert.alert(
-        "Permissão necessária",
-        "Precisamos de permissão para acessar seus vídeos",
-      );
+  const submit = async () => {
+    if (!form.title || !form.content) {
+      Alert.alert("Campos obrigatorios", "Preencha titulo e descricao.");
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-      allowsEditing: true,
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setVideoUri(result.assets[0].uri);
-      setImageUri(null); // Remove imagem se selecionar vídeo
-    }
-  };
-
-  const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (status !== "granted") {
+    if (type === "sale" && (!form.externalLink || (!form.imageUrl && !form.videoUrl))) {
       Alert.alert(
-        "Permissão necessária",
-        "Precisamos de permissão para acessar sua câmera",
+        "Post de venda incompleto",
+        "Posts de venda precisam de link externo e imagem ou video.",
       );
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [16, 9],
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
-      setVideoUri(null);
-    }
-  };
-
-  const removeMedia = () => {
-    setImageUri(null);
-    setVideoUri(null);
-  };
-
-  const handleSubmit = async () => {
-    if (!content.trim() && !imageUri && !videoUri) {
-      Alert.alert(
-        "Atenção",
-        "Adicione um texto, imagem ou vídeo para publicar",
-      );
-      return;
-    }
-
-    // Verificar se está autenticado
-    const token = await AsyncStorage.getItem("token");
-    if (!token) {
-      Alert.alert(
-        "Erro",
-        "Você precisa estar logado para criar uma publicação",
-      );
-      navigation.navigate("Login");
       return;
     }
 
     setLoading(true);
-
     try {
-      const postData = {
-        content: content.trim() || null,
-        imageUrl: imageUri || null,
-        videoUrl: videoUri || null,
-      };
-
-      console.log("Enviando post:", postData);
-
-      const response = await api.post("/posts", postData);
-
-      if (response.data.success) {
-        Alert.alert("Sucesso", "Publicação criada com sucesso!", [
-          {
-            text: "OK",
-            onPress: () => navigation.goBack(),
-          },
-        ]);
-      }
+      await postsAPI.create({
+        ...form,
+        type,
+      });
+      navigation.goBack();
     } catch (error) {
-      console.error("Erro ao criar post:", error);
-      const errorMessage =
-        error.response?.data?.error ||
-        error.message ||
-        "Erro ao criar publicação";
-      Alert.alert("Erro", errorMessage);
+      Alert.alert(
+        "Nao foi possivel publicar",
+        error.response?.data?.error || "Tente novamente em instantes.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.content}>
-          {/* Header do autor */}
-          <View style={styles.authorHeader}>
-            <View style={styles.avatar}>
-              {user?.avatar ? (
-                <Image
-                  source={{ uri: user.avatar }}
-                  style={styles.avatarImage}
-                />
-              ) : (
-                <Text style={styles.avatarText}>
-                  {user?.name?.charAt(0).toUpperCase() || "U"}
-                </Text>
-              )}
-            </View>
-            <View style={styles.authorInfo}>
-              <Text style={styles.authorName}>{user?.name || "Usuário"}</Text>
-              <Text style={styles.authorHeadline}>
-                {user?.headline || "Profissional"}
-              </Text>
-            </View>
-          </View>
+    <ClayScreen>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title}>Escolha o tipo de publicacao</Text>
+        <Text style={styles.subtitle}>
+          Marketing para autoridade. Venda para produtos, servicos e ofertas externas.
+        </Text>
 
-          <TextInput
-            style={styles.textInput}
-            placeholder="No que voce esta pensando?"
-            placeholderTextColor={COLORS.textSecondary}
+        <SegmentedTabs options={postTabs} value={type} onChange={setType} />
+
+        <ClayCard style={{ marginTop: 18 }}>
+          <ClayInput
+            label={type === "sale" ? "Nome da oferta" : "Titulo do conteudo"}
+            value={form.title}
+            onChangeText={(value) => updateField("title", value)}
+          />
+          <ClayInput
+            label="Descricao"
             multiline
-            value={content}
-            onChangeText={setContent}
-            textAlignVertical="top"
+            value={form.content}
+            onChangeText={(value) => updateField("content", value)}
           />
 
-          {imageUri && (
-            <View style={styles.mediaContainer}>
-              <Image source={{ uri: imageUri }} style={styles.mediaPreview} />
-              <TouchableOpacity
-                style={styles.removeMediaButton}
-                onPress={removeMedia}
-              >
-                <Icon name="close-circle" size={32} color="#FFF" />
-              </TouchableOpacity>
-            </View>
-          )}
+          {type === "sale" ? (
+            <>
+              <ClayInput
+                label="Nome do produto ou servico"
+                value={form.productName}
+                onChangeText={(value) => updateField("productName", value)}
+              />
+              <ClayInput
+                label="Preco ou faixa"
+                value={form.productPrice}
+                onChangeText={(value) => updateField("productPrice", value)}
+              />
+              <ClayInput
+                label="Link externo"
+                value={form.externalLink}
+                onChangeText={(value) => updateField("externalLink", value)}
+                hint="Pode ser WhatsApp, site ou loja."
+              />
+            </>
+          ) : null}
 
-          {videoUri && (
-            <View style={styles.mediaContainer}>
-              <View style={styles.videoPlaceholder}>
-                <Icon name="video" size={64} color={COLORS.textSecondary} />
-                <Text style={styles.videoText}>Vídeo selecionado</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.removeMediaButton}
-                onPress={removeMedia}
-              >
-                <Icon name="close-circle" size={32} color="#FFF" />
-              </TouchableOpacity>
-            </View>
-          )}
+          <ClayInput
+            label="URL de video (opcional)"
+            value={form.videoUrl}
+            onChangeText={(value) => updateField("videoUrl", value)}
+          />
 
-          {/* Opções de mídia */}
-          <View style={styles.mediaOptions}>
-            <Text style={styles.mediaTitle}>Adicionar à publicação</Text>
-            <View style={styles.mediaButtons}>
-              <TouchableOpacity style={styles.mediaButton} onPress={pickImage}>
-                <Icon name="image" size={24} color={COLORS.primary} />
-                <Text style={styles.mediaButtonText}>Foto</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.mediaButton} onPress={pickVideo}>
-                <Icon name="video" size={24} color={COLORS.primary} />
-                <Text style={styles.mediaButtonText}>Vídeo</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.mediaButton} onPress={takePhoto}>
-                <Icon name="camera" size={24} color={COLORS.primary} />
-                <Text style={styles.mediaButtonText}>Câmera</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={styles.mediaActions}>
+            <ClayButton title="Escolher imagem" variant="secondary" icon="image-outline" onPress={pickImage} style={{ flex: 1 }} />
+            {form.imageUrl ? (
+              <ClayButton
+                title="Remover"
+                variant="secondary"
+                icon="close"
+                onPress={() => updateField("imageUrl", "")}
+                style={{ flex: 1 }}
+              />
+            ) : null}
           </View>
-        </View>
-      </ScrollView>
 
-      {/* Botão de publicar */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[
-            styles.publishButton,
-            loading && styles.publishButtonDisabled,
-          ]}
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#FFF" />
+          {form.imageUrl ? (
+            <TouchableOpacity activeOpacity={0.9}>
+              <Image source={{ uri: form.imageUrl }} style={styles.preview} />
+            </TouchableOpacity>
           ) : (
-            <Text style={styles.publishButtonText}>Publicar</Text>
+            <View style={styles.placeholder}>
+              <Icon name="image-plus-outline" size={28} color={COLORS.primary} />
+              <Text style={styles.placeholderText}>
+                {type === "sale"
+                  ? "Para venda, inclua uma imagem ou informe um video."
+                  : "Voce pode enriquecer o post com imagem ou video."}
+              </Text>
+            </View>
           )}
-        </TouchableOpacity>
-      </View>
-    </View>
+        </ClayCard>
+
+        <ClayButton title="Publicar no feed" icon="rocket-launch-outline" onPress={submit} loading={loading} style={{ marginTop: 18, marginBottom: 30 }} />
+      </ScrollView>
+    </ClayScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
   content: {
-    padding: SIZES.padding,
+    padding: 18,
+    paddingBottom: 80,
   },
-  authorHeader: {
+  title: {
+    fontSize: 28,
+    fontWeight: "900",
+    color: COLORS.textPrimary,
+  },
+  subtitle: {
+    color: COLORS.textSecondary,
+    marginTop: 10,
+    lineHeight: 22,
+  },
+  mediaActions: {
     flexDirection: "row",
-    alignItems: "center",
+    gap: 12,
+    marginTop: 6,
     marginBottom: 16,
   },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.primary,
+  preview: {
+    width: "100%",
+    height: 240,
+    borderRadius: 22,
+  },
+  placeholder: {
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-    overflow: "hidden",
+    borderRadius: 22,
+    backgroundColor: COLORS.primarySoft,
+    minHeight: 180,
+    padding: 20,
   },
-  avatarImage: {
-    width: "100%",
-    height: "100%",
-  },
-  avatarText: {
-    color: "#FFF",
-    fontSize: SIZES.h3,
-    fontWeight: "bold",
-  },
-  authorInfo: {
-    flex: 1,
-  },
-  authorName: {
-    fontSize: SIZES.body2,
-    fontWeight: "bold",
-    color: COLORS.textPrimary,
-  },
-  authorHeadline: {
-    fontSize: SIZES.body3,
+  placeholderText: {
     color: COLORS.textSecondary,
-  },
-  textInput: {
-    fontSize: SIZES.body3,
-    color: COLORS.textPrimary,
-    minHeight: 120,
-    marginBottom: 20,
-    textAlignVertical: "top",
-  },
-  mediaContainer: {
-    position: "relative",
-    marginBottom: 20,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  mediaPreview: {
-    width: "100%",
-    height: 250,
-    backgroundColor: COLORS.border,
-  },
-  videoPlaceholder: {
-    width: "100%",
-    height: 250,
-    backgroundColor: COLORS.cardBackground || "#F5F5F5",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  videoText: {
-    marginTop: 12,
-    fontSize: SIZES.body3,
-    color: COLORS.textSecondary,
-  },
-  removeMediaButton: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    borderRadius: 16,
-  },
-  mediaOptions: {
-    backgroundColor: COLORS.cardBackground || "#F5F5F5",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border || "#E0E0E0",
-  },
-  mediaTitle: {
-    fontSize: SIZES.body3,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-    marginBottom: 12,
-  },
-  mediaButtons: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  mediaButton: {
-    alignItems: "center",
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: COLORS.background,
-    minWidth: 80,
-  },
-  mediaButtonText: {
-    fontSize: SIZES.body4,
-    color: COLORS.textPrimary,
-    marginTop: 4,
-  },
-  footer: {
-    padding: SIZES.padding,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border || "#E0E0E0",
-    backgroundColor: COLORS.background,
-  },
-  publishButton: {
-    backgroundColor: COLORS.primary,
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  publishButtonDisabled: {
-    opacity: 0.6,
-  },
-  publishButtonText: {
-    color: "#FFF",
-    fontSize: SIZES.body2,
-    fontWeight: "bold",
+    textAlign: "center",
+    marginTop: 10,
+    lineHeight: 20,
   },
 });
