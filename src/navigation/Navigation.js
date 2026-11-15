@@ -4,15 +4,12 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
-import { COLORS, SHADOWS, SIZES } from "../constants/theme";
+import { COLORS, SHADOWS } from "../constants/theme";
 import { useAuth } from "../contexts/AuthContext";
 
 import LoginScreen from "../screens/Auth/LoginScreen";
 import RegisterScreen from "../screens/Auth/RegisterScreen";
-import FeedScreen from "../screens/Feed/FeedScreen";
-import ProfileScreen from "../screens/Profile/ProfileScreen";
-import JobsScreen from "../screens/Jobs/JobsScreen";
-import ChatScreen from "../screens/Chat/ChatScreen";
+import ForgotPasswordScreen from "../screens/Auth/ForgotPasswordScreen";
 import ConversationScreen from "../screens/Chat/ConversationScreen";
 import PostDetailScreen from "../screens/Feed/PostDetailScreen";
 import CreatePostScreen from "../screens/Feed/CreatePostScreen";
@@ -22,7 +19,17 @@ import ApplyJobScreen from "../screens/Jobs/ApplyJobScreen";
 import ConnectionsScreen from "../screens/Profile/ConnectionsScreen";
 import EditProfileScreen from "../screens/Profile/EditProfileScreen";
 import SearchScreen from "../screens/Search/SearchScreen";
-import NotificationsScreen from "../screens/Notifications/NotificationsScreen";
+import {
+  CommunityChatScreen,
+  CommunityConversationScreen,
+  CommunityEditProfileScreen,
+  CommunityHomeScreen,
+  CommunityJobsScreen,
+  CommunityProductsScreen,
+  CommunityProfileScreen,
+  CommunityVipScreen,
+  CreateContentScreen,
+} from "../screens/Community/CommunityScreens";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -40,8 +47,9 @@ function TabNavigator() {
           const names = {
             Feed: "home-variant-outline",
             Jobs: "briefcase-outline",
+            Products: "tag-outline",
             Chat: "message-text-outline",
-            Notifications: "bell-outline",
+            VIP: "star-circle-outline",
             Profile: "account-outline",
           };
 
@@ -49,17 +57,14 @@ function TabNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Feed" component={FeedScreen} options={{ tabBarLabel: "Feed" }} />
-      <Tab.Screen name="Jobs" component={JobsScreen} options={{ tabBarLabel: "Vagas" }} />
-      <Tab.Screen name="Chat" component={ChatScreen} options={{ tabBarLabel: "Chat" }} />
-      <Tab.Screen
-        name="Notifications"
-        component={NotificationsScreen}
-        options={{ tabBarLabel: "Alertas" }}
-      />
+      <Tab.Screen name="Feed" component={CommunityHomeScreen} options={{ tabBarLabel: "Início" }} />
+      <Tab.Screen name="Jobs" component={CommunityJobsScreen} options={{ tabBarLabel: "Vagas" }} />
+      <Tab.Screen name="Products" component={CommunityProductsScreen} options={{ tabBarLabel: "Produtos" }} />
+      <Tab.Screen name="Chat" component={CommunityChatScreen} options={{ tabBarLabel: "Chat" }} />
+      <Tab.Screen name="VIP" component={CommunityVipScreen} options={{ tabBarLabel: "VIP" }} />
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
+        component={CommunityProfileScreen}
         options={{ tabBarLabel: "Perfil" }}
       />
     </Tab.Navigator>
@@ -78,7 +83,20 @@ export default function Navigation() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      linking={{
+        prefixes: ["anterachat://"],
+        config: {
+          screens: {
+            Login: "",
+            ForgotPassword: {
+              path: "reset-password",
+              parse: { token: value => value },
+            },
+          },
+        },
+      }}
+    >
       <Stack.Navigator
         screenOptions={{
           headerStyle: styles.header,
@@ -99,6 +117,11 @@ export default function Navigation() {
               component={RegisterScreen}
               options={{ title: "Criar conta" }}
             />
+            <Stack.Screen
+              name="ForgotPassword"
+              component={ForgotPasswordScreen}
+              options={{ title: "Redefinir senha" }}
+            />
           </>
         ) : (
           <>
@@ -106,6 +129,21 @@ export default function Navigation() {
               name="Main"
               component={TabNavigator}
               options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="CreateContent"
+              component={CreateContentScreen}
+              options={{ title: "Publicar" }}
+            />
+            <Stack.Screen
+              name="CommunityConversation"
+              component={CommunityConversationScreen}
+              options={{ title: "Conversa", headerShown: false }}
+            />
+            <Stack.Screen
+              name="CommunityEditProfile"
+              component={CommunityEditProfileScreen}
+              options={{ title: "Editar perfil" }}
             />
             <Stack.Screen
               name="CreatePost"
@@ -153,9 +191,9 @@ export default function Navigation() {
               options={{ title: "Buscar pessoas" }}
             />
             <Stack.Screen
-              name="UserProfile"
-              component={ProfileScreen}
-              options={{ title: "Perfil" }}
+              name="ForgotPassword"
+              component={ForgotPasswordScreen}
+              options={{ title: "Redefinir senha" }}
             />
           </>
         )}
@@ -182,19 +220,23 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     position: "absolute",
-    left: 14,
-    right: 14,
-    bottom: 18,
-    height: 76,
-    borderRadius: 28,
+    left: 10,
+    right: 10,
+    bottom: 12,
+    height: 66,
+    maxWidth: 980,
+    alignSelf: "center",
+    borderRadius: 22,
     backgroundColor: COLORS.surface,
     borderTopWidth: 0,
-    paddingTop: 10,
-    paddingBottom: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingTop: 5,
+    paddingBottom: 5,
     ...SHADOWS.soft,
   },
   tabLabel: {
-    fontSize: SIZES.caption,
+    fontSize: 11,
     fontWeight: "700",
   },
 });

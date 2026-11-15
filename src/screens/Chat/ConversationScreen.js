@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -20,16 +20,16 @@ export default function ConversationScreen({ navigation, route }) {
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
 
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
     const response = await messagesAPI.getMessages(conversationId);
     setMessages(response.data.data || []);
-  };
+  }, [conversationId]);
 
   useEffect(() => {
     loadMessages();
     const interval = setInterval(loadMessages, 4000);
     return () => clearInterval(interval);
-  }, [conversationId]);
+  }, [loadMessages]);
 
   const send = async () => {
     if (!message.trim()) return;

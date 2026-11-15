@@ -191,8 +191,8 @@ const styles = StyleSheet.create({
     ...SHADOWS.soft,
   },
   button: {
-    minHeight: 52,
-    borderRadius: 22,
+    minHeight: 48,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
@@ -234,14 +234,13 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   input: {
-    minHeight: 54,
-    borderRadius: 20,
+    minHeight: 52,
+    borderRadius: 15,
     backgroundColor: COLORS.surfaceStrong,
     borderWidth: 1,
     borderColor: COLORS.border,
     paddingHorizontal: 16,
     color: COLORS.textPrimary,
-    ...SHADOWS.soft,
   },
   inputMultiline: {
     minHeight: 120,
@@ -249,12 +248,12 @@ const styles = StyleSheet.create({
     paddingTop: 14,
   },
   avatarFallback: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primarySoft,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    color: COLORS.textWhite,
+    color: COLORS.primaryDark,
     fontWeight: "800",
     fontSize: 20,
   },

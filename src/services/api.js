@@ -33,6 +33,8 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (email, password) => api.post("/auth/login", { email, password }),
   register: (data) => api.post("/auth/register", data),
+  requestPasswordReset: (email) => api.post("/auth/forgot-password", { email }),
+  resetPassword: (token, password) => api.post("/auth/reset-password", { token, password }),
   logout: async () => {
     await AsyncStorage.multiRemove(["token", "user"]);
   },
@@ -58,9 +60,25 @@ export const jobsAPI = {
   delete: (id) => api.delete(`/jobs/${id}`),
   deactivate: (id) => api.patch(`/jobs/${id}/deactivate`),
   apply: (id, data) => api.post(`/jobs/${id}/apply`, data),
+  setSaved: (id, saved) => api.put(`/jobs/${id}/save`, { saved }),
   getApplications: (id) => api.get(`/jobs/${id}/applications`),
   updateApplicationStatus: (jobId, applicationId, data) =>
     api.patch(`/jobs/${jobId}/applications/${applicationId}`, data),
+};
+
+export const productsAPI = {
+  getAll: (params) => api.get("/products", { params }),
+  getById: (id) => api.get(`/products/${id}`),
+  create: (data) => api.post("/products", data),
+  update: (id, data) => api.put(`/products/${id}`, data),
+  delete: (id) => api.delete(`/products/${id}`),
+  reserve: (id) => api.post(`/products/${id}/reserve`),
+};
+
+export const vipAPI = {
+  getStatus: () => api.get("/vip"),
+  subscribe: (data) => api.post("/vip/subscribe", data),
+  cancel: () => api.post("/vip/cancel"),
 };
 
 export const messagesAPI = {

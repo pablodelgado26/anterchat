@@ -6,7 +6,7 @@ import Navigation from "./src/navigation/Navigation";
 export default function App() {
   return (
     <AuthProvider>
-      <StatusBar style="light" backgroundColor="#10B981" />
+      <StatusBar style="auto" backgroundColor="#0E7C66" />
       <Navigation />
     </AuthProvider>
   );
